@@ -276,6 +276,7 @@ public abstract class AbstractEditComponent extends WXComponent<WXEditText> {
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
                     if (mIgnoreNextOnInputEvent) {
                         mIgnoreNextOnInputEvent = false;
+                        mBeforeText = s.toString();//0.18版本weex @input事件不响应问题
                         return;
                     }
 
@@ -284,17 +285,17 @@ public abstract class AbstractEditComponent extends WXComponent<WXEditText> {
                     }
 
                     mBeforeText = s.toString();
-
-                    if (!hasChangeForDefaultValue) {
-                        if (getDomObject() != null && getDomObject().getAttrs() != null) {
-                            Object val = getDomObject().getAttrs().get(Constants.Name.VALUE);
-                            String valString = WXUtils.getString(val, null);
-                            if (mBeforeText != null && mBeforeText.equals(valString)) {
-                                hasChangeForDefaultValue = true;
-                                return;
-                            }
-                        }
-                    }
+                    //注释以下代码,解决第一次input回退删不掉第一个字符的bug
+//                    if (!hasChangeForDefaultValue) {
+//                        if (getDomObject() != null && getDomObject().getAttrs() != null) {
+//                            Object val = getDomObject().getAttrs().get(Constants.Name.VALUE);
+//                            String valString = WXUtils.getString(val, null);
+//                            if (mBeforeText != null && mBeforeText.equals(valString)) {
+//                                hasChangeForDefaultValue = true;
+//                                return;
+//                            }
+//                        }
+//                    }
 
                     if (!mIgnoreNextOnInputEvent) {
                         fireEvent(Constants.Event.INPUT, s.toString());
