@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.util.Log;
 
@@ -95,7 +96,7 @@ public class ImageUtil {
      * @param newWidth 前端指定的压缩宽,传递0,按照原图压缩，如果原图大于最大上线828,按照828比例压缩。
      */
     public static String zoomImage(Context context, Bitmap bitmap, int newWidth, int
-            biggestWidth, String filename) {
+            biggestWidth, float degree,String filename) {
 
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -108,13 +109,30 @@ public class ImageUtil {
             }
         }
         float scaleWidth = ((float) newWidth) / width;
+        // 根据旋转角度，生成旋转矩阵
         Matrix matrix = new Matrix();
         matrix.postScale(scaleWidth, scaleWidth);
+        matrix.postRotate(degree);
         Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
-
         return saveBitmap(newBitmap, filename, context);
     }
 
+
+    public static Bitmap zooImage(Context context, Bitmap bitmap, float scale) {
+        if (bitmap == null || bitmap.isRecycled()) return null;
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        if (width > 0 && height > 0) {
+            Matrix matrix = new Matrix();
+            matrix.postScale(scale, scale);
+            Bitmap getBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height,
+                    matrix,
+                    true);
+            return getBitmap;
+
+        }
+        return null;
+    }
 
     /**
      * 保存bitmap
@@ -170,20 +188,41 @@ public class ImageUtil {
     }
 
 
-    public static Bitmap zooImage(Context context, Bitmap bitmap, float scale) {
-        if (bitmap == null || bitmap.isRecycled()) return null;
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        if (width > 0 && height > 0) {
-            Matrix matrix = new Matrix();
-            matrix.postScale(scale, scale);
-            Bitmap getBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height,
-                    matrix,
-                    true);
-            return getBitmap;
-
+    /**
+     * 读取照片exif信息中的旋转角度
+     * @param path 照片路径
+     * @return 角度
+     */
+    public static int readPictureDegree(String path) {
+        int degree = 0;
+        try {
+            ExifInterface exifInterface = new ExifInterface(path);
+            int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL);
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    degree = 90;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    degree = 180;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    degree = 270;
+                    break;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return null;
+        return degree;
+    }
+
+    public static Bitmap toturn(Bitmap img, String path) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(readPictureDegree(path));
+        int width = img.getWidth();
+        int height = img.getHeight();
+        img = Bitmap.createBitmap(img, 0, 0, width, height, matrix, true);
+        return img;
     }
 
 }
