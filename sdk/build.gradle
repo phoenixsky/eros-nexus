@@ -138,9 +138,9 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    provided "com.android.support:recyclerview-v7:${PROJECT_SUPPORTLIBVERSION}"
-    provided "com.android.support:support-v4:${PROJECT_SUPPORTLIBVERSION}"
-    provided "com.android.support:appcompat-v7:${PROJECT_SUPPORTLIBVERSION}"
+    provided "com.android.support:recyclerview-v7:${PROJECT_SUPPORT_VERSION}"
+    provided "com.android.support:support-v4:${PROJECT_SUPPORT_VERSION}"
+    provided "com.android.support:appcompat-v7:${PROJECT_SUPPORT_VERSION}"
     provided "com.alibaba:fastjson:1.1.46.android"
 
     testCompile "com.alibaba:fastjson:1.1.46.android"
