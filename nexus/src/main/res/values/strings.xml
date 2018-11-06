@@ -14,6 +14,7 @@
 
     <string name="str_share_success">分享成功</string>
     <string name="str_share_failed">分享失败</string>
+    <string name="str_share_cancel">分享取消</string>
     <string name="str_paste_board">已经复制到剪贴板</string>
     <string name="str_locate_success">定位成功</string>
     <string name="str_locate_failed">定位失败</string>
