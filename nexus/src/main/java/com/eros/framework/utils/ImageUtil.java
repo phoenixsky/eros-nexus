@@ -1,6 +1,5 @@
 package com.eros.framework.utils;
 
-import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -9,14 +8,12 @@ import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.media.ExifInterface;
-import android.net.Uri;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * Created by Carry on 2017/8/21.
@@ -24,205 +21,199 @@ import java.io.InputStream;
 
 public class ImageUtil {
 
-    /**
-     * get a bitmap by path
-     */
-    public static Bitmap getBitmap(String path, Context context) {
+	/**
+	 * get a bitmap by path
+	 */
+	public static Bitmap getBitmap(String path, Context context) {
 
-        Uri uri = Uri.fromFile(new File(path));
-        InputStream in = null;
-        try {
-            ContentResolver mContentResolver = context.getContentResolver();
-            in = mContentResolver.openInputStream(uri);
+		final BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = true;
+		BitmapFactory.decodeFile(path, options);
 
-            //Decode image size
-            BitmapFactory.Options o = new BitmapFactory.Options();
-            o.inJustDecodeBounds = true;
+		// Calculate inSampleSize
+		options.inSampleSize = calculateInSampleSize(options, 480, 800);
 
-            BitmapFactory.decodeStream(in, null, o);
-            in.close();
+		// Decode bitmap with inSampleSize set
+		options.inJustDecodeBounds = false;
 
-            int scale = 1;
-            int IMAGE_MAX_SIZE = 1024;
-            if (o.outHeight > IMAGE_MAX_SIZE || o.outWidth > IMAGE_MAX_SIZE) {
-                scale = (int) Math.pow(2, (int) Math.round(Math.log(IMAGE_MAX_SIZE / (double)
-                        Math.max(o.outHeight, o.outWidth)) / Math.log(0.5)));
-            }
-
-            BitmapFactory.Options o2 = new BitmapFactory.Options();
-            o2.inSampleSize = scale;
-            in = mContentResolver.openInputStream(uri);
-            Bitmap b = BitmapFactory.decodeStream(in, null, o2);
-            in.close();
-
-            return b;
-        } catch (FileNotFoundException e) {
-            Log.i("BaseImageManager", path + " not found");
-        } catch (IOException e) {
-            Log.i("BaseImageManager", "file " + path + " not found");
-        }
-        return null;
-    }
-
-    /**
-     * zoom image by targetWidth and targetHeight
-     */
-    public static Bitmap zoomImage(Bitmap bitmap, float targetWidth, float targetHeight) {
-        if (bitmap == null) {
-            return null;
-        }
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-
-        if (width > 0 && height > 0) {
-            float widthScale = targetWidth / width;
-            float heightScale = targetHeight / height;
-            Matrix matrix = new Matrix();
-            matrix.postScale(widthScale, heightScale);
-            Bitmap getBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height,
-                    matrix,
-                    true);
-            return getBitmap;
-
-        }
-        return null;
-    }
+		return BitmapFactory.decodeFile(path, options);
+	}
 
 
-    /**
-     * 上传图片前，对图片进行压缩。
-     *
-     * @param bitmap   原始图片
-     * @param newWidth 前端指定的压缩宽,传递0,按照原图压缩，如果原图大于最大上线828,按照828比例压缩。
-     */
-    public static String zoomImage(Context context, Bitmap bitmap, int newWidth, int
-            biggestWidth, float degree,String filename) {
+	//计算图片的缩放值
+	public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+		final int height = options.outHeight;
+		final int width = options.outWidth;
+		int inSampleSize = 1;
 
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
+		if (height > reqHeight || width > reqWidth) {
+			final int heightRatio = Math.round((float) height / (float) reqHeight);
+			final int widthRatio = Math.round((float) width / (float) reqWidth);
+			inSampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;
+		}
+		return inSampleSize;
+	}
 
-        if (newWidth <= 0) {//Js 返回0 上传原始图片、
-            if (width > biggestWidth) {
-                newWidth = biggestWidth;
-            } else {
-                newWidth = width;
-            }
-        }
-        float scaleWidth = ((float) newWidth) / width;
-        // 根据旋转角度，生成旋转矩阵
-        Matrix matrix = new Matrix();
-        matrix.postScale(scaleWidth, scaleWidth);
-        matrix.postRotate(degree);
-        Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
-        return saveBitmap(newBitmap, filename, context);
-    }
+	/**
+	 * zoom image by targetWidth and targetHeight
+	 */
+	public static Bitmap zoomImage(Bitmap bitmap, float targetWidth, float targetHeight) {
+		if (bitmap == null) {
+			return null;
+		}
+		int width = bitmap.getWidth();
+		int height = bitmap.getHeight();
 
+		if (width > 0 && height > 0) {
+			float widthScale = targetWidth / width;
+			float heightScale = targetHeight / height;
+			Matrix matrix = new Matrix();
+			matrix.postScale(widthScale, heightScale);
+			Bitmap getBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height,
+					matrix,
+					true);
+			return getBitmap;
 
-    public static Bitmap zooImage(Context context, Bitmap bitmap, float scale) {
-        if (bitmap == null || bitmap.isRecycled()) return null;
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        if (width > 0 && height > 0) {
-            Matrix matrix = new Matrix();
-            matrix.postScale(scale, scale);
-            Bitmap getBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height,
-                    matrix,
-                    true);
-            return getBitmap;
-
-        }
-        return null;
-    }
-
-    /**
-     * 保存bitmap
-     *
-     * @param bmp     图片资源
-     * @param path    保存路径
-     * @param context 上下文
-     * @return 图片保存的路径
-     */
-    public static String saveBitmap(Bitmap bmp, String path, Context context) {
-        File dest = new File(path);
-        try {
-            dest.createNewFile();
-        } catch (IOException e) {
-            Log.e("BaseImageManager", "保存压缩图片Bitmap转Sd卡本地出错！！！");
-        }
-        FileOutputStream fOut = null;
-        try {
-            fOut = new FileOutputStream(dest);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        bmp.compress(Bitmap.CompressFormat.JPEG, 80, fOut);
-        try {
-            fOut.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fOut.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return dest.getAbsolutePath();
-    }
-
-    public static Bitmap drawableToBitmap(Drawable drawable) {
+		}
+		return null;
+	}
 
 
-        Bitmap bitmap = Bitmap.createBitmap(
+	/**
+	 * 上传图片前，对图片进行压缩。
+	 *
+	 * @param bitmap   原始图片
+	 * @param newWidth 前端指定的压缩宽,传递0,按照原图压缩，如果原图大于最大上线828,按照828比例压缩。
+	 */
+	public static String zoomImage(Context context, Bitmap bitmap, int newWidth, int
+			biggestWidth, float degree, String filename) {
 
-                drawable.getIntrinsicWidth(),
+		int width = bitmap.getWidth();
+		int height = bitmap.getHeight();
 
-                drawable.getIntrinsicHeight(),
+		if (newWidth <= 0) {//Js 返回0 上传原始图片、
+			if (width > biggestWidth) {
+				newWidth = biggestWidth;
+			} else {
+				newWidth = width;
+			}
+		}
+		float scaleWidth = ((float) newWidth) / width;
+		// 根据旋转角度，生成旋转矩阵
+		Matrix matrix = new Matrix();
+		matrix.postScale(scaleWidth, scaleWidth);
+		matrix.postRotate(degree);
+		Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
+		return saveBitmap(newBitmap, filename, context);
+	}
 
-                drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888
-                        : Bitmap.Config.RGB_565);
-        Canvas canvas = new Canvas(bitmap);
-        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-        drawable.draw(canvas);
-        return bitmap;
 
-    }
+	public static Bitmap zooImage(Context context, Bitmap bitmap, float scale) {
+		if (bitmap == null || bitmap.isRecycled()) return null;
+		int width = bitmap.getWidth();
+		int height = bitmap.getHeight();
+		if (width > 0 && height > 0) {
+			Matrix matrix = new Matrix();
+			matrix.postScale(scale, scale);
+			Bitmap getBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height,
+					matrix,
+					true);
+			return getBitmap;
+
+		}
+		return null;
+	}
+
+	/**
+	 * 保存bitmap
+	 *
+	 * @param bmp     图片资源
+	 * @param path    保存路径
+	 * @param context 上下文
+	 * @return 图片保存的路径
+	 */
+	public static String saveBitmap(Bitmap bmp, String path, Context context) {
+		File dest = new File(path);
+		try {
+			dest.createNewFile();
+		} catch (IOException e) {
+			Log.e("BaseImageManager", "保存压缩图片Bitmap转Sd卡本地出错！！！");
+		}
+		FileOutputStream fOut = null;
+		try {
+			fOut = new FileOutputStream(dest);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		bmp.compress(Bitmap.CompressFormat.JPEG, 80, fOut);
+		try {
+			fOut.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		try {
+			fOut.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return dest.getAbsolutePath();
+	}
+
+	public static Bitmap drawableToBitmap(Drawable drawable) {
 
 
-    /**
-     * 读取照片exif信息中的旋转角度
-     * @param path 照片路径
-     * @return 角度
-     */
-    public static int readPictureDegree(String path) {
-        int degree = 0;
-        try {
-            ExifInterface exifInterface = new ExifInterface(path);
-            int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION,
-                    ExifInterface.ORIENTATION_NORMAL);
-            switch (orientation) {
-                case ExifInterface.ORIENTATION_ROTATE_90:
-                    degree = 90;
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_180:
-                    degree = 180;
-                    break;
-                case ExifInterface.ORIENTATION_ROTATE_270:
-                    degree = 270;
-                    break;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return degree;
-    }
+		Bitmap bitmap = Bitmap.createBitmap(
 
-    public static Bitmap toturn(Bitmap img, String path) {
-        Matrix matrix = new Matrix();
-        matrix.postRotate(readPictureDegree(path));
-        int width = img.getWidth();
-        int height = img.getHeight();
-        img = Bitmap.createBitmap(img, 0, 0, width, height, matrix, true);
-        return img;
-    }
+				drawable.getIntrinsicWidth(),
+
+				drawable.getIntrinsicHeight(),
+
+				drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888
+						: Bitmap.Config.RGB_565);
+		Canvas canvas = new Canvas(bitmap);
+		drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+		drawable.draw(canvas);
+		return bitmap;
+
+	}
+
+
+	/**
+	 * 读取照片exif信息中的旋转角度
+	 *
+	 * @param path 照片路径
+	 * @return 角度
+	 */
+	public static int readPictureDegree(String path) {
+		int degree = 0;
+		try {
+			ExifInterface exifInterface = new ExifInterface(path);
+			int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+					ExifInterface.ORIENTATION_NORMAL);
+			switch (orientation) {
+				case ExifInterface.ORIENTATION_ROTATE_90:
+					degree = 90;
+					break;
+				case ExifInterface.ORIENTATION_ROTATE_180:
+					degree = 180;
+					break;
+				case ExifInterface.ORIENTATION_ROTATE_270:
+					degree = 270;
+					break;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return degree;
+	}
+
+	public static Bitmap toturn(Bitmap img, String path) {
+		Matrix matrix = new Matrix();
+		matrix.postRotate(readPictureDegree(path));
+		int width = img.getWidth();
+		int height = img.getHeight();
+		img = Bitmap.createBitmap(img, 0, 0, width, height, matrix, true);
+		return img;
+	}
 
 }
