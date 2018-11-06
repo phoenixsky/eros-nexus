@@ -174,6 +174,9 @@ public class WXText extends WXComponent<WXTextView> implements FlatComponent<Tex
     @Override
     public void destroy() {
         super.destroy();
+        if(mReceiver!=null){
+            LocalBroadcastManager.getInstance(getContext()).unregisterReceiver(mReceiver);
+        }
     }
 
 
