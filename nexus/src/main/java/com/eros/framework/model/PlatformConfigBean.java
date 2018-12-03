@@ -3,7 +3,6 @@ package com.eros.framework.model;
 import android.content.Context;
 import android.text.TextUtils;
 
-
 import com.eros.framework.constant.Constant;
 import com.eros.framework.manager.ManagerFactory;
 import com.eros.framework.manager.StorageManager;
@@ -340,6 +339,7 @@ public class PlatformConfigBean implements Serializable {
         private String selectedIcon;
         private boolean navShow;
         private String navTitle;
+        private String statusBarStyle;//LightContent,Default
 
         public String getPagePath() {
             return pagePath;
@@ -387,6 +387,14 @@ public class PlatformConfigBean implements Serializable {
 
         public void setNavTitle(String navTitle) {
             this.navTitle = navTitle;
+        }
+
+        public String getStatusBarStyle() {
+            return statusBarStyle;
+        }
+
+        public void setStatusBarStyle(String statusBarStyle) {
+            this.statusBarStyle = statusBarStyle;
         }
     }
 
